@@ -9,7 +9,7 @@ st.title("Airbnb Listings EDA Dashboard")
 #         LOAD DATASET FROM GITHUB AUTOMATICALLY
 # ---------------------------------------------------------
 
-github_url = "https://raw.githubusercontent.com/pritisaha-5/EDA-on-AirBnb-Listings/Sample_data.csv"
+github_url = "https://raw.githubusercontent.com/pritisaha-5/EDA-on-AirBnb-Listings/refs/heads/main/Sample_data.csv"
 
 st.write("### Loading Dataset from GitHub...")
 try:
