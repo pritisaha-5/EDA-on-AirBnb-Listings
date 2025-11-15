@@ -1,119 +1,93 @@
-# %%
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import streamlit as st 
+import streamlit as st
 
+st.set_option('deprecation.showPyplotGlobalUse', False)
 
-# %%
-df=pd.read_csv("Sample_data.csv")
+# ---------------------------------------------------------
+#                TITLE & FILE UPLOAD
+# ---------------------------------------------------------
+st.title("Airbnb Listings EDA Dashboard")
 
-# %%
-df
+uploaded_file = st.file_uploader("Upload your Airbnb Dataset (CSV)", type=["csv"])
 
-# %%
-df.columns
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
 
-# %% [markdown]
-# # Check for Missing Values
+    st.subheader("Dataset Preview")
+    st.dataframe(df.head())
 
-# %%
-print(df.isnull().sum())
+    # ---------------------------------------------------------
+    #                CHECK MISSING VALUES
+    # ---------------------------------------------------------
+    st.subheader("Missing Values")
+    st.write(df.isnull().sum())
 
-# %%
-df.info()
+    # ---------------------------------------------------------
+    #                DATA CLEANING
+    # ---------------------------------------------------------
+    st.subheader("Data Cleaning")
 
-# %% [markdown]
-# # Handling Missing Values
+    df['last review'] = pd.to_datetime(df['last review'], errors='coerce')
+    df.fillna({'reviews per month': 0, 'last review': df['last review'].min()}, inplace=True)
+    df.dropna(subset=['NAME', 'host name'], inplace=True)
 
-# %%
-df['last review']=pd.to_datetime(df['last review'],errors='coerce')
-df.info()
+    df = df.drop(columns=["license", "house_rules"], errors='ignore')
 
-# %%
-df.fillna({'reviews per month':0,'last review':df['last review'].min()},inplace =True)
+    # price formatting
+    df['price'] = df['price'].replace('[\$,]', '', regex=True).astype(float)
+    df['service fee'] = df['service fee'].replace('[\$,]', '', regex=True).astype(float)
 
-# %%
-df.dropna(subset=['NAME','host name'],inplace=True)
-print(df.isnull().sum())
+    df.drop_duplicates(inplace=True)
 
-# %%
-df=df.drop(columns=["license","house_rules"],errors='ignore')
+    st.success("Data Cleaning Completed!")
+    st.dataframe(df.head())
 
-# %%
-df.head()
+    # ---------------------------------------------------------
+    #                DESCRIPTIVE STATISTICS
+    # ---------------------------------------------------------
+    st.subheader("Statistical Summary")
+    st.write(df.describe())
 
-# %%
-df['price']=df['price'].replace('[\$,]','',regex=True).astype(float)
-df['service fee']=df['service fee'].replace('[\$,]','',regex=True).astype(float)
+    # ---------------------------------------------------------
+    #                VISUALIZATIONS
+    # ---------------------------------------------------------
+    st.header("Visualizations")
 
-# %%
-df.head()
+    # Price Distribution
+    st.subheader("Distribution of Listing Prices")
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df['price'], bins=50, kde=True)
+    st.pyplot()
 
-# %% [markdown]
-# # Remove Duplicates
+    # Room Type Countplot
+    st.subheader("Room Type Distribution")
+    plt.figure(figsize=(8, 5))
+    sns.countplot(x='room type', data=df)
+    st.pyplot()
 
-# %%
-df.drop_duplicates(inplace=True)
+    # Neighbourhood Group
+    st.subheader("Number of Listings by Neighbourhood Group")
+    plt.figure(figsize=(12, 8))
+    sns.countplot(y='neighbourhood group',
+                  data=df,
+                  order=df['neighbourhood group'].value_counts().index)
+    st.pyplot()
 
-# %%
-df.info()
+    # Box Plot: Price vs Room Type
+    st.subheader("Price vs Room Type")
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='room type', y='price', data=df)
+    st.pyplot()
 
-# %% [markdown]
-# # Statistics
+    # Reviews Over Time
+    st.subheader("Number of Reviews Over Time")
+    df['last review'] = pd.to_datetime(df['last review'])
+    reviews_over_time = df.groupby(df['last review'].dt.to_period('M')).size()
+    plt.figure(figsize=(12, 6))
+    reviews_over_time.plot(kind='line')
+    st.pyplot()
 
-# %%
-df.describe()
-
-# %%
-import matplotlib .pyplot as plt
-import seaborn as sns
-plt.figure(figsize=(10,6))
-sns.histplot(df['price'],bins=50,kde=True,color='blue')
-plt.title('Distribution of Listing Prices')
-plt.xlabel('Price($)')
-plt.ylabel('Frequency')
-plt.show()
-
-# %%
-plt.figure(figsize=(8,5))
-sns.countplot(x='room type',data=df,color='red')
-plt.title('Room Type Distribution')
-plt.xlabel('Room Type')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(12,8))
-sns.countplot(y='neighbourhood group',data=df,color='lightgreen',order=df['neighbourhood group'].value_counts().index)
-plt.title('Number of Listings by Neighbourhood Group')
-plt.xlabel('Count')
-plt.ylabel('Neighbourhood Group')
-plt.show()
-
-# %%
-plt.figure(figsize=(10,6))
-sns.boxplot(x='room type',y='price',hue='room type',data=df,palette='Set1')
-plt.title('Price vs. Room Type')
-plt.xlabel('Room Type')
-plt.ylabel('Price ($)')
-plt.legend(title='Room Type')
-plt.show()
-
-# %%
-df.head()
-
-# %%
-df['last review']=pd.to_datetime(df['last review'])
-reviews_over_time=df.groupby(df['last review'].dt.to_period('M')).size()
-plt.figure(figsize=(12,6))
-reviews_over_time.plot(kind='line',color='red')
-plt.title('Number of Reviews Over Time')
-plt.xlabel('Date')
-plt.ylabel('Number of Reviews')
-plt.show()
-
-# %%
-
-
-
+else:
+    st.info("Please upload a CSV file to start the EDA.")
